@@ -12,7 +12,13 @@ M(r"""# Laboratório de Testes de Hipóteses — versão simples
 mediana, variância e desvio padrão passo a passo → 5) verificar a normalidade → 6) escolher o teste →
 7) carregar **só** o teste escolhido e executá-lo → 8) conclusão.
 
-Os módulos ficam no GitHub e são baixados sob demanda: o notebook só traz o código do teste que for escolhido."""),
+Os módulos ficam no GitHub e são baixados sob demanda: o notebook só traz o código do teste que for escolhido.
+
+📘 **Primeira vez?** Leia o [guia de uso](https://github.com/RodrigoSantosB/lab-inferencia/blob/main/GUIA.md):
+ele explica cada campo, como saber se os dados são pareados e os erros mais comuns.
+
+**Como usar:** execute as células **de cima para baixo**. Nas células com formulário, preencha os campos e execute
+a célula de novo. Se mudar algo numa etapa, execute novamente as etapas seguintes."""),
 
 M("## 1. Configuração e módulos básicos"),
 C(r'''#@title Endereço do repositório { display-mode: "form" }
@@ -67,7 +73,10 @@ uma coluna com o grupo e outra com o identificador do par.
 | `equipe2_metodos_ensino` | nota | metodo | (vazio: grupos independentes) | B,A |
 | `equipe1_mlp_cnn` | acuracia | modelo | execucao | CNN,MLP |
 | `embalagens` (sintético) | peso_g | (vazio: um grupo) | (vazio) | (vazio) |
-| `tempos_resposta` (sintético, assimétrico) | tempo_resposta_h | (vazio) | (vazio) | (vazio) |"""),
+| `tempos_resposta` (sintético, assimétrico) | tempo_resposta_h | (vazio) | (vazio) | (vazio) |
+
+**Seus dados:** escolha `upload` e envie um CSV ou Excel. Se a tabela tiver **uma coluna por grupo** (formato largo,
+ex.: colunas `MLP` e `CNN`), use a célula opcional de conversão logo abaixo."""),
 C(r'''#@title Fonte dos dados { display-mode: "form" }
 FONTE = "exemplo"  #@param ["exemplo", "upload", "arquivo ou URL"]
 EXEMPLO = "equipe2_metodos_ensino"  #@param ["equipe2_metodos_ensino", "equipe1_mlp_cnn", "embalagens", "tempos_resposta"]
@@ -81,6 +90,24 @@ elif FONTE == "upload":
 else:
     df = exploracao.ler_tabela(CAMINHO)
 exploracao.visao_geral(df)'''),
+C(r'''#@title (Opcional) Converter formato largo → longo { display-mode: "form" }
+#@markdown Marque só se cada grupo estiver numa coluna separada. Liste as colunas, separadas por vírgula.
+CONVERTER = False  #@param {type:"boolean"}
+COLUNAS_LARGAS = "MLP,CNN"  #@param {type:"string"}
+if CONVERTER:
+    df = exploracao.largo_para_longo(df, [c.strip() for c in COLUNAS_LARGAS.split(",")])
+    exploracao.visao_geral(df)
+    print("Na próxima célula use COLUNA_VALOR = 'valor' e COLUNA_GRUPO = 'grupo'. Se cada linha original "
+          "tinha medidas da mesma unidade (pareado), use também COLUNA_PAR = 'linha'.")
+else:
+    print("Nada a converter: a tabela já está no formato longo.")'''),
+M(r"""**Como preencher a próxima célula** (os nomes devem ser iguais aos cabeçalhos mostrados acima):
+- **COLUNA_VALOR**: a coluna com o número medido (nota, peso, acurácia…).
+- **COLUNA_GRUPO**: a coluna que diz o grupo de cada linha. **Vazio** se houver um grupo só, comparado a um valor de referência.
+- **COLUNA_PAR**: só para desenho **pareado** (a mesma unidade nos dois grupos: o mesmo aluno antes/depois, a mesma
+  execução). Vazio se os grupos têm unidades diferentes.
+- **ORDEM_GRUPOS**: `primeiro,segundo`; a diferença será primeiro − segundo. **Preencha sempre que houver 2 grupos.**
+- **UNIDADE**: só um rótulo para os gráficos."""),
 C(r'''#@title Quais colunas analisar? { display-mode: "form" }
 COLUNA_VALOR = "nota"  #@param {type:"string"}
 COLUNA_GRUPO = "metodo"  #@param {type:"string"}
@@ -111,7 +138,15 @@ O teste t supõe normalidade da variável relevante: os valores de cada grupo ou
 C(r'''NORMALIDADE = exploracao.verificar_normalidade(DADOS, PAREADO)
 NORMALIDADE["tabela"]'''),
 
-M("## 6. Escolher o teste"),
+M(r"""## 6. Escolher o teste
+
+- **SIGMA_CONHECIDO**: marque **apenas** se o desvio padrão *da população* vier de fonte externa (histórico do
+  processo, especificação). Na dúvida, deixe desmarcado: o notebook usará o desvio padrão da amostra (teste t).
+- **MU0**: valor de referência, usado só com **um grupo** (ex.: 500 g). Com dois grupos é ignorado.
+- **ALTERNATIVA**: "bilateral" = há diferença; "maior" = primeiro grupo > segundo (ou média > μ₀); "menor" = o
+  contrário. Escolha antes de olhar os resultados; na dúvida, use "bilateral".
+- **ALPHA**: nível de significância, normalmente 0,05.
+- **TROCAR_TESTE**: deixe vazio para usar o teste sugerido."""),
 C(r'''#@title Hipóteses { display-mode: "form" }
 #@markdown σ conhecido = desvio padrão **da população** vindo de fonte externa (histórico, especificação).
 SIGMA_CONHECIDO = False  #@param {type:"boolean"}

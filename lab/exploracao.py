@@ -30,6 +30,23 @@ def upload_colab():
     return pd.read_csv(io.BytesIO(conteudo), sep=None, engine="python")
 
 
+def largo_para_longo(df, colunas, nome_valor="valor", nome_grupo="grupo", nome_par="linha"):
+    """Converte o formato largo (uma coluna por grupo) para o longo (uma linha por observação).
+
+    Cada linha original recebe um identificador em `nome_par`, que pode ser usado como coluna do par
+    se as colunas forem medidas da mesma unidade (por exemplo, antes/depois do mesmo aluno).
+    """
+    faltando = [c for c in colunas if c not in df.columns]
+    if faltando:
+        raise ValueError(f"Colunas inexistentes: {faltando}. Colunas: {list(df.columns)}")
+    largo = df[colunas].copy()
+    largo.insert(0, nome_par, range(1, len(largo) + 1))
+    longo = largo.melt(id_vars=nome_par, var_name=nome_grupo, value_name=nome_valor).dropna(subset=[nome_valor])
+    md(f"Convertido para o formato longo: colunas `{nome_valor}` (valores), `{nome_grupo}` (grupos: "
+       f"{', '.join(map(str, colunas))}) e `{nome_par}` (número da linha original).")
+    return longo
+
+
 def visao_geral(df):
     """Tamanho, tipos, valores ausentes e primeiras linhas."""
     md(f"**{df.shape[0]} linhas × {df.shape[1]} colunas.**")
@@ -57,15 +74,25 @@ def organizar(df, coluna_valor, coluna_grupo="", coluna_par="", ordem_grupos="")
     if coluna_valor not in df.columns:
         raise ValueError(f"Coluna '{coluna_valor}' não existe. Colunas: {list(df.columns)}")
     dados = df.copy()
+    if dados[coluna_valor].dtype == object:  # aceita vírgula decimal (ex.: "85,2")
+        dados[coluna_valor] = dados[coluna_valor].astype(str).str.strip().str.replace(",", ".", regex=False)
     dados[coluna_valor] = pd.to_numeric(dados[coluna_valor], errors="coerce")
     ausentes = int(dados[coluna_valor].isna().sum())
     dados = dados.dropna(subset=[coluna_valor])
     if ausentes:
         md(f"⚠️ {ausentes} valor(es) ausente(s) ou não numérico(s) em `{coluna_valor}` foram removidos.")
     if not coluna_grupo:
+        md(f"**Um grupo** ({len(dados)} observações): a média será comparada ao valor de referência μ₀ da etapa 6.")
         return {"grupos": {coluna_valor: dados[coluna_valor].to_numpy()}, "pares": None, "valor": coluna_valor}
+    if coluna_grupo not in dados.columns:
+        raise ValueError(f"Coluna '{coluna_grupo}' não existe. Colunas: {list(dados.columns)}")
     nomes = [g.strip() for g in ordem_grupos.split(",")] if ordem_grupos else \
         sorted(dados[coluna_grupo].astype(str).unique())
+    if len(nomes) == 2:
+        origem = "definida por ORDEM_GRUPOS" if ordem_grupos else \
+            "⚠️ ordem ALFABÉTICA, pois ORDEM_GRUPOS está vazio: confira se é a comparação desejada"
+        md(f"**Diferença calculada como `{nomes[0]}` − `{nomes[1]}`** ({origem}). Na etapa 6, \"maior\" significará "
+           f"{nomes[0]} > {nomes[1]} e \"menor\" significará {nomes[0]} < {nomes[1]}.")
     dados[coluna_grupo] = dados[coluna_grupo].astype(str)
     grupos = {g: dados.loc[dados[coluna_grupo] == g, coluna_valor].to_numpy() for g in nomes}
     for g, v in grupos.items():

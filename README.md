@@ -8,13 +8,14 @@ do teste escolhido**.
 
 1. Abra `https://colab.research.google.com/github/RodrigoSantosB/lab-inferencia/blob/main/Lab_Inferencia_Simples.ipynb`.
 2. Na primeira célula, confira se `USUARIO_GITHUB` é o dono do repositório (padrão: RodrigoSantosB).
-3. Execute as células em ordem, ajustando os formulários de cada etapa.
+3. Execute as células em ordem, ajustando os formulários de cada etapa. Dúvidas sobre os campos: veja o [GUIA.md](GUIA.md).
 
 ## Estrutura
 
 | Caminho | Conteúdo |
 |---|---|
-| `Lab_Inferencia_Simples.ipynb` | o notebook (21 células) |
+| `Lab_Inferencia_Simples.ipynb` | o notebook (23 células) |
+| `GUIA.md` | guia de uso: cada campo, pareado × independente, leitura dos resultados, erros comuns |
 | `lab/comum.py` | p-valor, valores críticos, relatório padronizado, gráfico da distribuição sob H₀, conclusão |
 | `lab/exploracao.py` | leitura dos dados, gráficos, cálculo passo a passo, verificação de normalidade |
 | `lab/escolha.py` | regras que sugerem o teste |
